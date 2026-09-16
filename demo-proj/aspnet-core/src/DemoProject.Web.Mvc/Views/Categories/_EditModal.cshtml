@@ -1,0 +1,25 @@
+@using DemoProject.Application.Shared.Dto.Books
+@model CategoryDto
+
+<div class="modal-header">
+    <h5 class="modal-title">Cập nhật Danh mục</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+<form id="CategoryEditForm" role="form" class="form-horizontal">
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <div class="modal-body">
+        <div class="form-group row required">
+            <label class="col-md-3 col-form-label">Tên danh mục</label>
+            <div class="col-md-9">
+                <input type="text" class="form-control" name="Name" value="@Model.Name" required maxlength="128">
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Hủy</button>
+        <button type="submit" class="btn btn-primary save-button">Lưu lại</button>
+    </div>
+</form>

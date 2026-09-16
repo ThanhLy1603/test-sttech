@@ -1,0 +1,7 @@
+﻿services:
+  demoproject.application.shared:
+    image: demoproject.application.shared
+    build:
+      context: .
+      dockerfile: src/DemoProject.Application.Shared/Dockerfile
+
