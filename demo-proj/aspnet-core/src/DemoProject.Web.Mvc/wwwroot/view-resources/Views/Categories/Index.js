@@ -133,7 +133,7 @@
 
         abp.ajax({
             url: abp.appPath + 'Categories/Update',
-            type: 'POST',
+            type: 'PUT',
             data: JSON.stringify(category),
         }).done(function () {
             $editModal.modal('hide');
@@ -154,7 +154,7 @@
                 if (isConfirmed) {
                     abp.ajax({
                         url: abp.appPath + 'Categories/Delete?id=' + id,
-                        type: 'POST',
+                        type: 'DELETE',
                     }).done(function () {
                         dataTable.ajax.reload();
                         abp.notify.success('Xóa danh mục thành công');

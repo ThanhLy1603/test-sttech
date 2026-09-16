@@ -1,0 +1,87 @@
+@using DemoProject.Application.Shared.Dto.Books
+@model BookDto
+@{
+    Layout = null;
+    var categories = ViewBag.Categories as List<CategoryDto> ?? new List<CategoryDto>();
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">Cập nhật Sách</h5>
+    <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<form name="BookEditForm" id="BookEditForm" role="form" class="form-horizontal">
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <div class="modal-body">
+        <div class="form-group row required">
+            <label class="col-md-3 col-form-label">Tên sách <span class="text-danger">*</span></label>
+            <div class="col-md-9">
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    name="Title" 
+                    value="@Model.Title" 
+                    required 
+                    maxlength="100" 
+                    data-msg-required="Vui lòng nhập tên sách."
+                    data-msg-maxlength="Tên sách không được vượt quá 100 ký tự."
+                >
+            </div>
+        </div>
+        <div class="form-group row required">
+            <label class="col-md-3 col-form-label">Tác giả <span class="text-danger">*</span></label>
+            <div class="col-md-9">
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    name="Author" 
+                    value="@Model.Author" 
+                    required 
+                    maxlength="100" 
+                    data-msg-required="Vui lòng nhập tên tác giả."
+                    data-msg-maxlength="Tên tác giả không được vượt quá 100 ký tự."
+                >
+            </div>
+        </div>
+        <div class="form-group row required">
+            <label class="col-md-3 col-form-label">Giá sách <span class="text-danger">*</span></label>
+            <div class="col-md-9">
+                <input 
+                    type="number" 
+                    step="1000" 
+                    min="0" 
+                    max="999999999" 
+                    class="form-control" 
+                    name="Price" 
+                    value="@Model?.Price" 
+                    required 
+                    data-msg-required="Vui lòng nhập giá sách." 
+                    data-msg-min="Giá sách không được nhỏ hơn 0 đ." 
+                    data-msg-max="Giá sách quá lớn."
+                >
+            </div>
+        </div>
+        <div class="form-group row required">
+            <label class="col-md-3 col-form-label">Danh mục <span class="text-danger">*</span></label>
+            <div class="col-md-9">
+                <select class="form-control" name="CategoryId" required data-msg-required="Vui lòng chọn danh mục.">
+                    <option value="">-- Chọn danh mục --</option>
+                    @foreach (var category in categories)
+                    {
+                        @* SỬA: Check null an toàn để không bị ngắt trang *@
+                        var isSelected = (Model.Category != null && category.Id == Model.Category.Id);
+                        
+                        <option value="@category.Id" selected="@(isSelected ? "selected" : null)">
+                            @category.Name
+                        </option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer justify-content-between">
+        <button type="button" class="btn btn-default" data-dismiss="modal" data-bs-dismiss="modal">Hủy</button>
+        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+    </div>
+</form>

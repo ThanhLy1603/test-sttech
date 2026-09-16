@@ -48,14 +48,14 @@ namespace DemoProject.Web.Controllers
             return PartialView("_EditModal", category);
         }
 
-        [HttpPost]
+        [HttpPut]
         public async Task<IActionResult> Update([FromBody] UpdateCategoryDto updateCategoryDto)
         {
             var result = await _categoryService.UpdateAsync(updateCategoryDto);
             return Json(result);
         }
     
-        [HttpPost]
+        [HttpDelete]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _categoryService.DeleteAsync(id);

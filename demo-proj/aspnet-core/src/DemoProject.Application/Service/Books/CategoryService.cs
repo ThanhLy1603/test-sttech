@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Abp.Application.Services;
 using Abp.Application.Services.Dto;
 using Abp.Domain.Repositories;
-using Abp.Extensions;
 using Abp.Linq.Extensions;
 using Abp.UI;
 using DemoProject.Application.Shared.Dto.Books;
@@ -26,6 +25,13 @@ namespace DemoProject.Service.Books
         public CategoryService(IRepository<Category, Guid> categoryRepository)
         {
             _categoryRepository = categoryRepository;
+        }
+
+        public async Task<List<CategoryDto>> GetAllAsync()
+        {
+            var categories = await _categoryRepository.GetAllListAsync();
+
+            return ObjectMapper.Map<List<CategoryDto>>(categories);
         }
 
         public async Task<PagedResultDto<CategoryDto>> GetAllAsync(CategoriesInput input)

@@ -8,8 +8,8 @@ namespace DemoProject.Application.Shared.Interface.Books
 {
     public interface ICategoryService : IApplicationService
     {
-        Task<PagedResultDto<CategoryDto>> GetAllAsync(
-            CategoriesInput input);
+        Task<List<CategoryDto>> GetAllAsync();
+        Task<PagedResultDto<CategoryDto>> GetAllAsync(CategoriesInput input);
 
         Task<CategoryDto> GetByIdAsync(Guid id);
 
