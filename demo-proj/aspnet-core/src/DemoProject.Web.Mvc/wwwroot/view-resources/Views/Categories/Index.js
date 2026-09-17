@@ -1,9 +1,8 @@
 (function ($) {
-
     const $table = $('#CategoriesTable'),
         $createModal = $('#CategoryCreateModal'),
         $editModal = $('#CategoryEditModal');
-    
+
     // Khởi tạo validation cho Form thêm mới
     const $CreateForm = $('form[name="CategoryCreateForm"]');
     if ($.fn.valid && $CreateForm.length) {
@@ -25,7 +24,7 @@
         });
     }
 
-    $(document).on('input', 'form[name="CategoryCreateForm"] input[name="Name"], #CategoryEditForm input[name="Name"]', function () {
+    $(document).on('input', 'form[name="CategoryCreateForm"] input[name="Name"]', function () {
         const $input = $(this);
         $input.removeClass('is-invalid');
         $input.siblings('.invalid-feedback').hide();
@@ -110,13 +109,12 @@
         const $form = $(this);
         const $nameInput = $form.find('input[name="Name"]');
 
-        // Validate phía client cơ bản (Required, Maxlength...)
         if (!$form.valid()) {
             return;
         }
 
         const category = $form.serializeFormToObject();
-        
+
         abp.ui.setBusy($createModal);
 
         abp.ajax({
@@ -133,31 +131,31 @@
             abp.notify.success('Thêm mới danh mục thành công');
         }).fail(function (error) {
             $nameInput.addClass('is-invalid');
-            
+
             let $errorSpan = $nameInput.siblings('.invalid-feedback');
             if (!$errorSpan.length) {
                 $nameInput.after('<span class="invalid-feedback"></span>');
                 $errorSpan = $nameInput.siblings('.invalid-feedback');
             }
-            
-            const errorMessage = error && error.message 
-                ? error.message 
+
+            const errorMessage = error && error.message
+                ? error.message
                 : 'Tên danh mục đã tồn tại trong hệ thống';
-            
+
             $errorSpan.text(errorMessage).show();
         }).always(function () {
             abp.ui.clearBusy($createModal);
         });
     });
 
-    // Reset Form khi ẩn Modal
+    // Reset Form khi ẩn Modal Thêm mới
     $createModal.on('hidden.bs.modal hide.bs.modal', function () {
         const $form = $(this).find('form');
         if ($form.length) {
             $form[0].reset();
             $form.find('.is-invalid').removeClass('is-invalid');
             $form.find('.invalid-feedback').hide().text('');
-            
+
             if ($form.data('validator')) {
                 $form.data('validator').resetForm();
             }
@@ -175,77 +173,10 @@
         }).done(function (data) {
             $editModal.find('.modal-content').html(data);
             $editModal.modal('show');
-
-            const $editForm = $('#CategoryEditForm');
-            if ($.fn.valid && $editForm.length) {
-                $editForm.validate({
-                    rules: { 
-                        Name: { 
-                            required: true, 
-                            maxlength: 100 } 
-                    },
-                    highlight: function (element) { 
-                        $(element).addClass('is-invalid');
-                    },
-                    unhighlight: function (element) { 
-                        $(element).removeClass('is-invalid'); 
-                    },
-                    errorElement: 'span',
-                    errorClass: 'invalid-feedback'
-                });
-            }
         });
     });
 
-    // 3. Xử lý sự kiện Submit Form Sửa 
-    $(document).on('submit', '#CategoryEditForm', function (e) {
-        e.preventDefault();
-
-        const $editForm = $(this);
-        const $nameInput = $editForm.find('input[name="Name"]');
-
-        // SỬA: Cú pháp chuẩn check validate
-        if (!$editForm.valid()) {
-            return;
-        }
-
-        const category = {
-            id: $editForm.find('input[name="Id"]').val(),
-            name: $nameInput.val().trim(),
-        };
-
-        abp.ui.setBusy($editModal);
-
-        abp.ajax({
-            url: abp.appPath + 'Categories/Update',
-            type: 'PUT',
-            data: JSON.stringify(category),
-            abpHandleError: false 
-        }).done(function () {
-            $editModal.modal('hide');
-            dataTable.ajax.reload();
-            abp.notify.info('Cập nhật danh mục thành công');
-        }).fail(function (error) {
-            $nameInput.addClass('is-invalid');
-
-            // SỬA: Thêm dấu !
-            let $errorSpan = $nameInput.siblings('.invalid-feedback');
-            if (!$errorSpan.length) {
-                $nameInput.after('<span class="invalid-feedback"></span>');
-                $errorSpan = $nameInput.siblings('.invalid-feedback');
-            }
-
-            const errorMessage = error && error.message
-                ? error.message
-                : 'Tên danh mục đã tồn tại trong hệ thống';
-
-            $errorSpan.text(errorMessage).show();
-        }).always(function () {
-            abp.ui.clearBusy($editModal);
-        });
-    });
-
-    // 4. Xóa Category
+    // 3. Xóa Category
     $(document).on('click', '.delete-category', function () {
         const id = $(this).attr('data-id');
         const name = $(this).attr('data-name');
@@ -267,17 +198,21 @@
         );
     });
 
-    // 5. Tìm kiếm
+    // 4. Tìm kiếm
     $('#SearchButton').click(function (e) {
         e.preventDefault();
         dataTable.ajax.reload();
     });
-
+    
     $('#SearchKeyword').on('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             dataTable.ajax.reload();
         }
     });
+    
+    // Xuất đối tượng dataTable ra ngoài
+    window.Categories = window.Categories || {};
+    window.Categories.dataTable = dataTable;
 
 })(jQuery);
