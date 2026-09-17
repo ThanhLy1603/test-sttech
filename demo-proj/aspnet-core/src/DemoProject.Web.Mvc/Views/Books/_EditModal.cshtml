@@ -54,12 +54,12 @@
                     max="999999999" 
                     class="form-control" 
                     name="Price" 
-                    value="@Model?.Price" 
+                    value="@(Model?.Price != null ? Convert.ToDecimal(Model.Price).ToString("0", System.Globalization.CultureInfo.InvariantCulture) : "0")" 
                     required 
                     data-msg-required="Vui lòng nhập giá sách." 
                     data-msg-min="Giá sách không được nhỏ hơn 0 đ." 
                     data-msg-max="Giá sách quá lớn."
-                >
+                />
             </div>
         </div>
         <div class="form-group row required">

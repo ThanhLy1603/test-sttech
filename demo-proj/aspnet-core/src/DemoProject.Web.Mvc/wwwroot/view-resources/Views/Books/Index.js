@@ -3,12 +3,41 @@
         $createModal = $('#BookCreateModal'),
         $createForm = $createModal.find('form[name="BookCreateForm"]'),
         $editModal = $('#BookEditModal');
-    
-    if ($.fn.validate) {
-        $createForm.validate();
+
+    // 1. Khởi tạo validation cho Form Thêm mới
+    if ($.fn.valid && $createForm.length) {
+        $createForm.validate({
+            rules: {
+                Title: { required: true, maxlength: 100 },
+                Author: { required: true, maxlength: 100 },
+                Price: { required: true, min: 0, max: 999999999 },
+                CategoryId: { required: true }
+            },
+            messages: {
+                Title: { required: "Vui lòng nhập tên sách.", maxlength: "Tên sách không được vượt quá 100 ký tự." },
+                Author: { required: "Vui lòng nhập tên tác giả.", maxlength: "Tên tác giả không được vượt quá 100 ký tự." },
+                Price: { required: "Vui lòng nhập giá sách.", min: "Giá sách không được nhỏ hơn 0 đ.", max: "Giá sách quá lớn." },
+                CategoryId: { required: "Vui lòng chọn danh mục." }
+            },
+            highlight: function (element) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function (element) {
+                $(element).removeClass('is-invalid');
+            },
+            errorElement: 'span',
+            errorClass: 'invalid-feedback'
+        });
     }
-    
-    // Cài đặt cấu hình và render Table
+
+    // Tự động xóa border đỏ và thông báo lỗi khi gõ/chọn lại
+    $(document).on('input change', 'form[name="BookCreateForm"] input, form[name="BookCreateForm"] select, #BookEditForm input, #BookEditForm select', function () {
+        const $input = $(this);
+        $input.removeClass('is-invalid');
+        $input.siblings('.invalid-feedback').hide();
+    });
+
+    // Render DataTable
     const dataTable = $table.DataTable({
         paging: true,
         serverSide: true,
@@ -23,13 +52,12 @@
                 maxResultCount: data.length || 0,
                 sorting: 'Title ASC'
             };
-            
+
             abp.ajax({
                 url: abp.appPath + 'Books/GetAll?' + $.param(input),
                 type: 'GET',
             }).done(function (data) {
                 const response = data.result || data;
-                
                 callback({
                     recordsTotal: response.totalCount || 0,
                     recordsFiltered: response.totalCount || 0,
@@ -45,31 +73,20 @@
                 sortable: false,
                 render: (data, type, row, meta) => meta.row + meta.settings._iDisplayStart + 1
             },
-            {
-                targets: 1, 
-                data: 'title',
-            },
-            {
-                targets: 2,
-                data: 'author',
-            },
+            { targets: 1, data: 'title' },
+            { targets: 2, data: 'author' },
             {
                 targets: 3,
                 data: 'price',
                 className: 'text-center',
                 render: function (data) {
                     if (data !== null && data !== undefined) {
-                        return new Intl.NumberFormat('vi-VN').format(data);
+                        return new Intl.NumberFormat('vi-VN').format(data) + ' VNĐ';
                     }
-                    
                     return '0 VNĐ';
                 }
             },
-            {
-                targets: 4,
-                data: 'category.name',
-                defaultContent: '-'
-            },
+            { targets: 4, data: 'category.name', defaultContent: '-' },
             {
                 targets: 5,
                 data: null,
@@ -80,7 +97,6 @@
                         <button type="button" class="btn btn-sm btn-primary edit-book mr-1" data-id="${row.id}">
                             <i class="fas fa-pencil-alt"></i> Sửa
                         </button>
-                        
                         <button type="button" class="btn btn-sm btn-danger delete-book" data-id="${row.id}" data-title="${row.title}">
                             <i class="fas fa-trash"></i> Xóa
                         </button>
@@ -89,98 +105,161 @@
             }
         ]
     });
-    
+
     // Thêm sách mới
     $createForm.on('submit', function (event) {
         event.preventDefault();
         
-        if ($createForm.valid && !$createForm.valid()) return;
-        
+        const $titleInput = $createForm.find('input[name="Title"]');
+
+        if (!$createForm.valid()) return;
+
         const book = $createForm.serializeFormToObject();
-        
+
         abp.ui.setBusy($createModal);
-        
+
         abp.ajax({
             url: abp.appPath + 'Books/Create',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(book),
+            abpHandleError: false,
+            error: function () {}
         }).done(function () {
             if (document.activeElement) {
                 document.activeElement.blur();
             }
-            
             $createModal.modal('hide');
-            $createForm[0].reset();
             dataTable.ajax.reload();
             abp.notify.success('Thêm sách mới thành công');
+        }).fail(function (error) {
+            $titleInput.addClass('is-invalid');
+
+            let $errorSpan = $titleInput.siblings('.invalid-feedback');
+            if (!$errorSpan.length) {
+                $titleInput.after('<span class="invalid-feedback"></span>');
+                $errorSpan = $titleInput.siblings('.invalid-feedback');
+            }
+
+            const errorMessage = error && error.message
+                ? error.message
+                : 'Tên sách đã tồn tại trong hệ thống';
+
+            $errorSpan.text(errorMessage).show();
         }).always(function () {
-            abp.ui.clearBusy($createForm);
+            abp.ui.clearBusy($createModal);
         });
     });
-    
+
     // Reset Form khi đóng Modal Create
     $createModal.on('hidden.bs.modal hide.bs.modal', function () {
         $createForm[0].reset();
-        
+        $createForm.find('.is-invalid').removeClass('is-invalid');
+        $createForm.find('.invalid-feedback').hide().text('');
+
         if ($createForm.data('validator')) {
             $createForm.data('validator').resetForm();
         }
     });
-    
+
     // Mở Modal chỉnh sửa thông tin sách
     $(document).on('click', '.edit-book', function () {
         const id = $(this).attr('data-id');
-        
+        abp.ui.setBusy($table);
+
         abp.ajax({
             url: abp.appPath + 'Books/EditModal?id=' + id,
             type: 'GET',
             dataType: 'html'
         }).done(function (htmlContent) {
             $editModal.find('.modal-content').html(htmlContent);
+
+            const $editForm = $editModal.find('#BookEditForm');
             
-            const $editForm = $editModal.find('form#BookEditForm');
-            if ($.fn.validate) {
-                $editForm.validate();
+            if ($.fn.valid && $editForm.length) {
+                $editForm.validate({
+                    rules: {
+                        Title: { required: true, maxlength: 100 },
+                        Author: { required: true, maxlength: 100 },
+                        Price: { required: true, min: 0, max: 999999999 },
+                        CategoryId: { required: true }
+                    },
+                    messages: {
+                        Title: { required: "Vui lòng nhập tên sách.", maxlength: "Tên sách không được vượt quá 100 ký tự." },
+                        Author: { required: "Vui lòng nhập tên tác giả.", maxlength: "Tên tác giả không được vượt quá 100 ký tự." },
+                        Price: { required: "Vui lòng nhập giá sách.", min: "Giá sách không được nhỏ hơn 0 đ.", max: "Giá sách quá lớn." },
+                        CategoryId: { required: "Vui lòng chọn danh mục." }
+                    },
+                    highlight: function (element) {
+                        $(element).addClass('is-invalid');
+                    },
+                    unhighlight: function (element) {
+                        $(element).removeClass('is-invalid');
+                    },
+                    errorElement: 'span',
+                    errorClass: 'invalid-feedback'
+                });
             }
-            
+
             $editModal.modal('show');
         }).always(function () {
-            abp.ui.clearBusy($createModal);
+            abp.ui.clearBusy($table);
         });
     });
-    
+
     // Cập nhật thông tin sách
     $(document).on('submit', '#BookEditForm', function (event) {
         event.preventDefault();
-        
+
         const $editForm = $(this);
-        
-        if ($editForm.valid && !$editForm.valid()) return;
-        
+        const $titleInput = $editForm.find('input[name="Title"]');
+
+        if (!$editForm.valid()) return;
+
         const book = $editForm.serializeFormToObject();
-        
-        abp.ui.setBusy($createModal);
-        
+
+        abp.ui.setBusy($editModal);
+
         abp.ajax({
             url: abp.appPath + 'Books/Update',
             type: 'PUT',
             contentType: 'application/json',
             data: JSON.stringify(book),
+            abpHandleError: false,
+            error: function () {}
         }).done(function () {
             $editModal.modal('hide');
             dataTable.ajax.reload();
             abp.notify.info('Cập nhật thành công');
+        }).fail(function (error) {
+            $titleInput.addClass('is-invalid');
+
+            let $errorSpan = $titleInput.siblings('.invalid-feedback');
+            if (!$errorSpan.length) {
+                $titleInput.after('<span class="invalid-feedback"></span>');
+                $errorSpan = $titleInput.siblings('.invalid-feedback');
+            }
+
+            const errorMessage = error && error.message
+                ? error.message
+                : 'Tên sách đã tồn tại trong hệ thống';
+
+            $errorSpan.text(errorMessage).show();
         }).always(function () {
-            abp.ui.clearBusy($createModal);
+            abp.ui.clearBusy($editModal);
         });
     });
-    
+
+    // Reset Modal Content khi đóng Edit Modal
+    $editModal.on('hidden.bs.modal hide.bs.modal', function () {
+        $(this).find('.modal-content').html('');
+    });
+
     // Xóa sách
     $(document).on('click', '.delete-book', function () {
         const id = $(this).attr('data-id');
         const title = $(this).attr('data-title');
-        
+
         abp.message.confirm(
             `Bạn có chắc chắn muốn xóa cuốn sách "${title}" không?`,
             'Xác nhận xóa',
@@ -199,21 +278,15 @@
                 }
             }
         );
-    })
-    
-    // Thực hiện tìm kiếm 
-    $('#SearchButton').click(function (e) {
-        e.preventDefault();
-        
-        dataTable.ajax.reload();
     });
-    
-    // Thêm chức năng nhấn Enter
+
+    // Tìm kiếm 
+    const doSearch = () => dataTable.ajax.reload();
+    $('#SearchButton').click(doSearch);
     $('#SearchKeyword').on('keyup', function (e) {
         if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
-            
-            dataTable.ajax.reload();
+            doSearch();
         }
     });
 })(jQuery);

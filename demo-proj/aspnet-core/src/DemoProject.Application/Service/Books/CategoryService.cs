@@ -76,6 +76,13 @@ namespace DemoProject.Service.Books
         public async Task<CategoryDto> CreateAsync(
             CreateCategoryDto createCategoryDto)
         {
+            createCategoryDto.Name = createCategoryDto.Name?.Trim();
+
+            if (string.IsNullOrWhiteSpace(createCategoryDto.Name))
+            {
+                throw new UserFriendlyException("Tên danh mục không được để trống");
+            }
+            
             var isNameExist =
                 await _categoryRepository.FirstOrDefaultAsync(
                     c => c.Name == createCategoryDto.Name
@@ -83,13 +90,10 @@ namespace DemoProject.Service.Books
 
             if (isNameExist != null)
             {
-                throw new UserFriendlyException(
-                    "Tên danh mục này đã tồn tại"
-                );
+                throw new UserFriendlyException($"Tên danh mục '{createCategoryDto.Name}' đã tồn tại trong hệ thống.");
             }
 
-            var category =
-                ObjectMapper.Map<Category>(createCategoryDto);
+            var category = ObjectMapper.Map<Category>(createCategoryDto);
 
             await _categoryRepository.InsertAsync(category);
 
@@ -99,6 +103,13 @@ namespace DemoProject.Service.Books
         public async Task<CategoryDto> UpdateAsync(
             UpdateCategoryDto updateCategoryDto)
         {
+            updateCategoryDto.Name = updateCategoryDto.Name.Trim();
+
+            if (string.IsNullOrWhiteSpace(updateCategoryDto.Name))
+            {
+                throw new UserFriendlyException("Tên danh mục không được để trống.");
+            }
+            
             var category =
                 await _categoryRepository.GetAsync(updateCategoryDto.Id);
 
@@ -111,9 +122,7 @@ namespace DemoProject.Service.Books
 
             if (isNameExist != null)
             {
-                throw new UserFriendlyException(
-                    "Tên danh mục này đã tồn tại"
-                );
+                throw new UserFriendlyException($"Tên danh mục '{updateCategoryDto.Name}' đã tồn tại trong hệ thống.");
             }
 
             ObjectMapper.Map(updateCategoryDto, category);

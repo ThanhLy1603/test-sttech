@@ -85,7 +85,7 @@ namespace DemoProject.Service.Books
             }
             
             var isTitleExist = await _bookRepository.FirstOrDefaultAsync(x => x.Title == createBookDto.Title);
-            if (isTitleExist == null)
+            if (isTitleExist != null)
             {
                 throw new UserFriendlyException($"Tên sách '{createBookDto.Title}' đã tồn tại trong hệ thống.");
             }

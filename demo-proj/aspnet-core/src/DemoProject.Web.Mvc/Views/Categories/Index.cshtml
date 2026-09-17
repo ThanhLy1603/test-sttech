@@ -74,7 +74,15 @@
                     <div class="form-group row required">
                         <label class="col-md-3 col-form-label">Tên danh mục</label>
                         <div class="col-md-9">
-                            <input type="text" class="form-control" name="Name" required maxlength="100">
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                name="Name" 
+                                required 
+                                maxlength="100"
+                                data-msg-required="Vui lòng nhập tên danh mục"
+                                data-msg-maxlength="Tên danh mục không được vượt quá 100 ký tự"
+                            />
                         </div>
                     </div>
                 </div>

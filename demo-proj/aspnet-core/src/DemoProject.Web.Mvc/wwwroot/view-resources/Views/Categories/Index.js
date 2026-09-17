@@ -3,6 +3,33 @@
     const $table = $('#CategoriesTable'),
         $createModal = $('#CategoryCreateModal'),
         $editModal = $('#CategoryEditModal');
+    
+    // Khởi tạo validation cho Form thêm mới
+    const $CreateForm = $('form[name="CategoryCreateForm"]');
+    if ($.fn.valid && $CreateForm.length) {
+        $CreateForm.validate({
+            rules: {
+                Name: {
+                    required: true,
+                    maxlength: 100
+                }
+            },
+            highlight: function (element) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function (element) {
+                $(element).removeClass('is-invalid');
+            },
+            errorElement: 'span',
+            errorClass: 'invalid-feedback',
+        });
+    }
+
+    $(document).on('input', 'form[name="CategoryCreateForm"] input[name="Name"], #CategoryEditForm input[name="Name"]', function () {
+        const $input = $(this);
+        $input.removeClass('is-invalid');
+        $input.siblings('.invalid-feedback').hide();
+    });
 
     const dataTable = $table.DataTable({
         paging: true,
@@ -81,27 +108,60 @@
     $(document).on('submit', 'form[name="CategoryCreateForm"]', function (e) {
         e.preventDefault();
         const $form = $(this);
+        const $nameInput = $form.find('input[name="Name"]');
 
-        if ($.fn.valid && !$form.valid()) return;
+        // Validate phía client cơ bản (Required, Maxlength...)
+        if (!$form.valid()) {
+            return;
+        }
 
         const category = $form.serializeFormToObject();
+        
+        abp.ui.setBusy($createModal);
 
         abp.ajax({
             url: abp.appPath + 'Categories/Create',
             type: 'POST',
             data: JSON.stringify(category),
+            abpHandleError: false,
+            error: function () {}
         }).done(function () {
             $createModal.modal('hide');
             $form[0].reset();
+            $form.find('.is-invalid').removeClass('is-invalid');
             dataTable.ajax.reload();
             abp.notify.success('Thêm mới danh mục thành công');
+        }).fail(function (error) {
+            $nameInput.addClass('is-invalid');
+            
+            let $errorSpan = $nameInput.siblings('.invalid-feedback');
+            if (!$errorSpan.length) {
+                $nameInput.after('<span class="invalid-feedback"></span>');
+                $errorSpan = $nameInput.siblings('.invalid-feedback');
+            }
+            
+            const errorMessage = error && error.message 
+                ? error.message 
+                : 'Tên danh mục đã tồn tại trong hệ thống';
+            
+            $errorSpan.text(errorMessage).show();
+        }).always(function () {
+            abp.ui.clearBusy($createModal);
         });
     });
 
     // Reset Form khi ẩn Modal
     $createModal.on('hidden.bs.modal hide.bs.modal', function () {
         const $form = $(this).find('form');
-        if ($form.length) $form[0].reset();
+        if ($form.length) {
+            $form[0].reset();
+            $form.find('.is-invalid').removeClass('is-invalid');
+            $form.find('.invalid-feedback').hide().text('');
+            
+            if ($form.data('validator')) {
+                $form.data('validator').resetForm();
+            }
+        }
     });
 
     // 2. Mở Modal Cập nhật Category
@@ -115,6 +175,25 @@
         }).done(function (data) {
             $editModal.find('.modal-content').html(data);
             $editModal.modal('show');
+
+            const $editForm = $('#CategoryEditForm');
+            if ($.fn.valid && $editForm.length) {
+                $editForm.validate({
+                    rules: { 
+                        Name: { 
+                            required: true, 
+                            maxlength: 100 } 
+                    },
+                    highlight: function (element) { 
+                        $(element).addClass('is-invalid');
+                    },
+                    unhighlight: function (element) { 
+                        $(element).removeClass('is-invalid'); 
+                    },
+                    errorElement: 'span',
+                    errorClass: 'invalid-feedback'
+                });
+            }
         });
     });
 
@@ -123,22 +202,46 @@
         e.preventDefault();
 
         const $editForm = $(this);
+        const $nameInput = $editForm.find('input[name="Name"]');
 
-        if ($.fn.valid && !$editForm.valid()) return;
+        // SỬA: Cú pháp chuẩn check validate
+        if (!$editForm.valid()) {
+            return;
+        }
 
         const category = {
             id: $editForm.find('input[name="Id"]').val(),
-            name: $editForm.find('input[name="Name"]').val()
+            name: $nameInput.val().trim(),
         };
+
+        abp.ui.setBusy($editModal);
 
         abp.ajax({
             url: abp.appPath + 'Categories/Update',
             type: 'PUT',
             data: JSON.stringify(category),
+            abpHandleError: false 
         }).done(function () {
             $editModal.modal('hide');
             dataTable.ajax.reload();
             abp.notify.info('Cập nhật danh mục thành công');
+        }).fail(function (error) {
+            $nameInput.addClass('is-invalid');
+
+            // SỬA: Thêm dấu !
+            let $errorSpan = $nameInput.siblings('.invalid-feedback');
+            if (!$errorSpan.length) {
+                $nameInput.after('<span class="invalid-feedback"></span>');
+                $errorSpan = $nameInput.siblings('.invalid-feedback');
+            }
+
+            const errorMessage = error && error.message
+                ? error.message
+                : 'Tên danh mục đã tồn tại trong hệ thống';
+
+            $errorSpan.text(errorMessage).show();
+        }).always(function () {
+            abp.ui.clearBusy($editModal);
         });
     });
 
