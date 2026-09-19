@@ -1,4 +1,7 @@
 (function ($) {
+    // Khai báo Namespace toàn cục ngay đầu file
+    window.Books = window.Books || {};
+
     const $table = $('#BooksTable'),
         $createModal = $('#BookCreateModal'),
         $createForm = $createModal.find('form[name="BookCreateForm"]'),
@@ -19,26 +22,19 @@
                 Price: { required: "Vui lòng nhập giá sách.", min: "Giá sách không được nhỏ hơn 0 đ.", max: "Giá sách quá lớn." },
                 CategoryId: { required: "Vui lòng chọn danh mục." }
             },
-            highlight: function (element) {
-                $(element).addClass('is-invalid');
-            },
-            unhighlight: function (element) {
-                $(element).removeClass('is-invalid');
-            },
+            highlight: function (element) { $(element).addClass('is-invalid'); },
+            unhighlight: function (element) { $(element).removeClass('is-invalid'); },
             errorElement: 'span',
             errorClass: 'invalid-feedback'
         });
     }
 
-    // Xóa hiệu ứng báo lỗi khi gõ/chọn trong form thêm mới
     $(document).on('input change', 'form[name="BookCreateForm"] input, form[name="BookCreateForm"] select', function () {
-        const $input = $(this);
-        $input.removeClass('is-invalid');
-        $input.siblings('.invalid-feedback').hide();
+        $(this).removeClass('is-invalid').siblings('.invalid-feedback').hide();
     });
 
-    // 2. Render DataTables
-    const dataTable = $table.DataTable({
+    // 2. Render DataTables & Gán ngay vào Window Object
+    window.Books.dataTable = $table.DataTable({
         paging: true,
         serverSide: true,
         processing: true,
@@ -79,12 +75,7 @@
                 targets: 3,
                 data: 'price',
                 className: 'text-center',
-                render: function (data) {
-                    if (data !== null && data !== undefined) {
-                        return new Intl.NumberFormat('vi-VN').format(data) + ' VNĐ';
-                    }
-                    return '0 VNĐ';
-                }
+                render: (data) => data ? new Intl.NumberFormat('vi-VN').format(data) + ' VNĐ' : '0 VNĐ'
             },
             { targets: 4, data: 'category.name', defaultContent: '-' },
             {
@@ -109,13 +100,10 @@
     // 3. Xử lý Thêm sách mới
     $createForm.on('submit', function (event) {
         event.preventDefault();
-
         const $titleInput = $createForm.find('input[name="Title"]');
-
         if (!$createForm.valid()) return;
 
         const book = $createForm.serializeFormToObject();
-
         abp.ui.setBusy($createModal);
 
         abp.ajax({
@@ -123,43 +111,30 @@
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(book),
-            abpHandleError: false,
-            error: function () {}
+            abpHandleError: false
         }).done(function () {
-            if (document.activeElement) {
-                document.activeElement.blur();
-            }
+            if (document.activeElement) document.activeElement.blur();
             $createModal.modal('hide');
-            dataTable.ajax.reload();
+            window.Books.dataTable.ajax.reload();
             abp.notify.success('Thêm sách mới thành công');
         }).fail(function (error) {
             $titleInput.addClass('is-invalid');
-
             let $errorSpan = $titleInput.siblings('.invalid-feedback');
             if (!$errorSpan.length) {
                 $titleInput.after('<span class="invalid-feedback"></span>');
                 $errorSpan = $titleInput.siblings('.invalid-feedback');
             }
-
-            const errorMessage = error && error.message
-                ? error.message
-                : 'Tên sách đã tồn tại trong hệ thống';
-
-            $errorSpan.text(errorMessage).show();
+            $errorSpan.text(error?.message || 'Tên sách đã tồn tại trong hệ thống').show();
         }).always(function () {
             abp.ui.clearBusy($createModal);
         });
     });
 
-    // Reset Form khi đóng Modal Create
     $createModal.on('hidden.bs.modal hide.bs.modal', function () {
         $createForm[0].reset();
         $createForm.find('.is-invalid').removeClass('is-invalid');
         $createForm.find('.invalid-feedback').hide().text('');
-
-        if ($createForm.data('validator')) {
-            $createForm.data('validator').resetForm();
-        }
+        if ($createForm.data('validator')) $createForm.data('validator').resetForm();
     });
 
     // 4. Mở Modal Chỉnh sửa
@@ -179,7 +154,6 @@
         });
     });
 
-    // Reset HTML trong Modal Edit khi ẩn
     $editModal.on('hidden.bs.modal hide.bs.modal', function () {
         $(this).find('.modal-content').html('');
     });
@@ -199,7 +173,7 @@
                         url: abp.appPath + 'Books/Delete?id=' + id,
                         type: 'DELETE',
                     }).done(function () {
-                        dataTable.ajax.reload();
+                        window.Books.dataTable.ajax.reload();
                         abp.notify.success('Xóa sách thành công');
                     }).always(function () {
                         abp.ui.clearBusy($table);
@@ -210,7 +184,7 @@
     });
 
     // 6. Tìm kiếm
-    const doSearch = () => dataTable.ajax.reload();
+    const doSearch = () => window.Books.dataTable.ajax.reload();
     $('#SearchButton').click(doSearch);
     $('#SearchKeyword').on('keyup', function (e) {
         if (e.key === 'Enter' || e.keyCode === 13) {
@@ -218,9 +192,5 @@
             doSearch();
         }
     });
-
-    // Xuất đối tượng dataTable ra ngoài để file Modal JS có thể tương tác
-    window.Books = window.Books || {};
-    window.Books.dataTable = dataTable;
 
 })(jQuery);

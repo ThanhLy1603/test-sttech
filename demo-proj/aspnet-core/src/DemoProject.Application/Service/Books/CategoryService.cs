@@ -41,7 +41,7 @@ namespace DemoProject.Service.Books
             if (input.MaxResultCount <= 0) input.MaxResultCount = 10;
 
             var query = _categoryRepository.GetAll()
-                .WhereIf(!string.IsNullOrWhiteSpace(input.Filter), c => c.Name.Contains(input.Filter));
+                .WhereIf(!string.IsNullOrWhiteSpace(input.Filter), category => category.Name.Contains(input.Filter));
 
             var totalCount = await query.CountAsync();
 
@@ -85,7 +85,7 @@ namespace DemoProject.Service.Books
             
             var isNameExist =
                 await _categoryRepository.FirstOrDefaultAsync(
-                    c => c.Name == createCategoryDto.Name
+                    category => category.Name == createCategoryDto.Name
                 );
 
             if (isNameExist != null)
@@ -115,9 +115,9 @@ namespace DemoProject.Service.Books
 
             var isNameExist =
                 await _categoryRepository.FirstOrDefaultAsync(
-                    c =>
-                        c.Name == updateCategoryDto.Name &&
-                        c.Id != updateCategoryDto.Id
+                    category =>
+                        category.Name == updateCategoryDto.Name &&
+                        category.Id != updateCategoryDto.Id
                 );
 
             if (isNameExist != null)

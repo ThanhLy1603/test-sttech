@@ -33,7 +33,7 @@ namespace DemoProject.Service.Books
             input ??= new BooksInput();
 
             var query = _bookRepository.GetAll()
-                .Include(x => x.Category)
+                .Include(book => book.Category)
                 .WhereIf(!input.Filter.IsNullOrWhiteSpace(),
                     book => book.Title.Contains(input.Filter) ||
                             book.Author.Contains(input.Filter));
@@ -62,8 +62,8 @@ namespace DemoProject.Service.Books
 
         public async Task<BookDto> GetByIdAsync(Guid id)
         {
-            var book = await _bookRepository.GetAllIncluding(x => x.Category)
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var book = await _bookRepository.GetAllIncluding(book => book.Category)
+                .FirstOrDefaultAsync(book => book.Id == id);
             
             if (book == null)
             {
@@ -78,13 +78,13 @@ namespace DemoProject.Service.Books
             createBookDto.Title = createBookDto.Title?.Trim();
             createBookDto.Author = createBookDto.Author?.Trim();
             
-            var isCategoryExist = await _categoryRepository.FirstOrDefaultAsync(c => c.Id == createBookDto.CategoryId);
+            var isCategoryExist = await _categoryRepository.FirstOrDefaultAsync(category => category.Id == createBookDto.CategoryId);
             if (isCategoryExist == null)
             {
                 throw new UserFriendlyException("Danh mục lựa chọn không tồn tại");
             }
             
-            var isTitleExist = await _bookRepository.FirstOrDefaultAsync(x => x.Title == createBookDto.Title);
+            var isTitleExist = await _bookRepository.FirstOrDefaultAsync(book => book.Title == createBookDto.Title);
             if (isTitleExist != null)
             {
                 throw new UserFriendlyException($"Tên sách '{createBookDto.Title}' đã tồn tại trong hệ thống.");
@@ -105,14 +105,14 @@ namespace DemoProject.Service.Books
             
             var book = await _bookRepository.GetAsync(updateBookDto.Id);
             
-            var isCategoryExist = await _categoryRepository.FirstOrDefaultAsync(c => c.Id == updateBookDto.CategoryId);
+            var isCategoryExist = await _categoryRepository.FirstOrDefaultAsync(category => category.Id == updateBookDto.CategoryId);
             if (isCategoryExist == null)
             {
                 throw new UserFriendlyException("Danh mục lựa chọn không tồn tại");
             }
             
-            var isTitleExist = await _bookRepository.FirstOrDefaultAsync(b => 
-                b.Title.ToLower() == updateBookDto.Title.ToLower() && b.Id != updateBookDto.Id);
+            var isTitleExist = await _bookRepository.FirstOrDefaultAsync(book => 
+                book.Title.ToLower() == updateBookDto.Title.ToLower() && book.Id != updateBookDto.Id);
 
             if (isTitleExist != null)
             {
